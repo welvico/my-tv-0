@@ -6,117 +6,115 @@ plugins {
 }
 
 android {
-    namespace 'com.lizongying.mytv0'
-    compileSdk 34
-
-    viewBinding {
-        enabled = true
-    }
+    namespace = "com.lizongying.mytv0"
+    compileSdk = 34
 
     defaultConfig {
-        applicationId "com.lizongying.mytv0"
-        minSdk 17
-        targetSdk 33
-        versionCode VersionCode()
-        versionName VersionName()
+        applicationId = "com.lizongying.mytv0"
+        minSdk = 19
+        targetSdk = 32
+        versionCode = getVersionCode()
+        versionName = getVersionName()
+        multiDexEnabled = true
+    }
 
-        // This block is different from the one you use to link Gradle
-        // to your CMake or ndk-build script.
-        externalNativeBuild {
-
-            // For ndk-build, instead use the ndkBuild block.
-            cmake {
-                arguments "-DIS_SO_BUILD=${project.hasProperty('IS_SO_BUILD') ? project.IS_SO_BUILD : true}"
-
-//                abiFilters "armeabi-v7a", "arm64-v8a", "x86", "x86_64"
-                abiFilters "armeabi-v7a", "arm64-v8a"
-            }
-        }
-
-        // Similar to other properties in the defaultConfig block,
-        // you can configure the ndk block for each product flavor
-        // in your build configuration.
-        ndk {
-            // Specifies the ABI configurations of your native
-            // libraries Gradle should build and package with your app.
-            abiFilters "armeabi-v7a", "arm64-v8a"
-        }
-        multiDexEnabled true
+    buildFeatures {
+        viewBinding = true
     }
 
     buildTypes {
         release {
-            minifyEnabled false
-            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            isMinifyEnabled = false
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
         }
     }
-
     compileOptions {
-        sourceCompatibility JavaVersion.VERSION_17
-        targetCompatibility JavaVersion.VERSION_17
-    }
+        // Flag to enable support for the new language APIs
 
+        // For AGP 4.1+
+        isCoreLibraryDesugaringEnabled = true
+
+        sourceCompatibility = JavaVersion.VERSION_1_8
+        targetCompatibility = JavaVersion.VERSION_1_8
+    }
     kotlinOptions {
-        jvmTarget = 17
-    }
-
-    // Encapsulates your external native build configurations.
-    externalNativeBuild {
-
-        // Encapsulates your CMake build configurations.
-        cmake {
-
-            // Provides a relative path to your CMake build script.
-            path = file("CMakeLists.txt")
-        }
+        jvmTarget = "1.8"
     }
 }
 
-static def VersionCode() {
-    try {
-        def p = "git describe --tags --always"
-        def process = p.execute()
+fun getVersionCode(): Int {
+    return try {
+        val process = Runtime.getRuntime().exec("git describe --tags --always")
         process.waitFor()
-        def replace = [v: "", ".": " ", "-": " "]
-        def arr = (process.text.trim().replace(replace) + " 0").split(" ")
-        def versionCode = arr[0].toInteger() * 16777216 + arr[1].toInteger() * 65536 + arr[2].toInteger() * 256 + arr[3].toInteger()
-        return versionCode
-    } catch (ignored) {
-        return 1
+        val arr = (process.inputStream.bufferedReader().use(BufferedReader::readText).trim()
+            .replace("v", "").replace(".", " ").replace("-", " ") + " 0").split(" ")
+        val versionCode =
+            arr[0].toInt() * 16777216 + arr[1].toInt() * 65536 + arr[2].toInt() * 256 + arr[3].toInt()
+        versionCode
+    } catch (ignored: Exception) {
+        1
     }
 }
 
-static def VersionName() {
-    try {
-        def process = "git describe --tags --always".execute()
+fun getVersionName(): String {
+    return try {
+        val process = Runtime.getRuntime().exec("git describe --tags --always")
         process.waitFor()
-        def versionName = process.text.trim() - "v"
-        if (versionName.isEmpty()) {
-            versionName = "1.0.0"
+        val versionName = process.inputStream.bufferedReader().use(BufferedReader::readText).trim().removePrefix("v")
+        versionName.ifEmpty {
+            "1.0.0"
         }
-        return versionName
-    } catch (ignored) {
-        return "1.0.0"
+    } catch (ignored: Exception) {
+        "1.0.0"
     }
 }
 
 dependencies {
-    implementation(libs.media3.ui)
-    implementation(libs.media3.exoplayer)
-    implementation(libs.media3.exoplayer.hls)
-    implementation(libs.protobuf.kotlin)
-    implementation(libs.gson)
-    implementation(libs.converter.gson)
-    implementation(libs.converter.protobuf)
-    implementation(libs.retrofit)
-    implementation(libs.glide)
-    implementation(libs.work.runtime.ktx)
-    implementation(libs.core.ktx)
-    implementation(libs.multidex)
-    implementation(libs.leanback)
-    implementation(libs.lifecycle.runtime.ktx)
-    implementation(libs.constraintlayout)
-    implementation(libs.serialization.json)
-    implementation(libs.coroutines.android)
-    implementation(libs.javax.annotation.api)
+    // For AGP 7.4+
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.4")
+
+    // 19 java8
+    val media3Version = "1.3.1"
+    implementation("androidx.media3:media3-ui:$media3Version")
+
+    // For media playback using ExoPlayer
+    implementation("androidx.media3:media3-exoplayer:$media3Version")
+
+    implementation("androidx.media3:media3-exoplayer-hls:$media3Version")
+    implementation("androidx.media3:media3-exoplayer-dash:$media3Version")
+    implementation("androidx.media3:media3-exoplayer-rtsp:$media3Version")
+
+    implementation("androidx.core:core-ktx:1.13.1")
+    implementation("androidx.multidex:multidex:2.0.1")
+    implementation("androidx.recyclerview:recyclerview:1.3.2")
+
+    //java7
+    implementation("com.github.bumptech.glide:glide:4.16.0")
+
+    // 21:2.11.0 17:2.6.4
+    val retrofit2Version = "2.11.0"
+    implementation("com.squareup.retrofit2:converter-gson:$retrofit2Version")
+    implementation ("com.squareup.retrofit2:retrofit:$retrofit2Version")
+
+    // For yunos
+    val exoplayerVersion = "2.13.3"
+    implementation("com.google.android.exoplayer:exoplayer-ui:$exoplayerVersion")
+    implementation("com.google.android.exoplayer:exoplayer-core:$exoplayerVersion")
+    implementation("com.google.android.exoplayer:exoplayer-hls:$exoplayerVersion")
+
+    implementation("androidx.constraintlayout:constraintlayout:2.1.4")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1")
+
+    implementation(files("libs/lib-decoder-ffmpeg-release.aar"))
+
+    implementation("io.github.lizongying:gua64:1.4.5")
+
+    implementation("org.nanohttpd:nanohttpd:2.3.1")
+
+    implementation("com.google.zxing:core:3.5.3")
+
+    implementation("androidx.leanback:leanback:1.0.0")
 }
