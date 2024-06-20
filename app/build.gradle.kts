@@ -2,7 +2,7 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
     id("com.android.application")
-    kotlin("android") version "1.6.10"
+    id("org.jetbrains.kotlin.android")
 }
 
 android {
